@@ -315,105 +315,181 @@
 
 
 #|
-READ 0 <- 1 
-CHECK at 225 is 1 ADD 1 + 1100 -> 1101 -> {6}
-ADD 1 + 238 -> 239 -> {225}
-OUTPUT { 0 } 
-WRITE 0 
-ADD 13 + 55 -> 68 -> {224}
-ADD 68 + -68 -> 0 -> {224}
-OUTPUT { 0 } 
-WRITE 0 
-MULT 0 * 8 -> 0 -> {223} 
-ADD 0 + 4 -> 4 -> {224}
-ADD 4 + 0 -> 4 -> {223}
-ADD 62 + 41 -> 103 -> {225}
-ADD 83 + 71 -> 154 -> {225}
-MULT 59 * 16 -> 944 -> {224} 
-ADD -944 + 944 -> 0 -> {224}
-OUTPUT { 0 } 
-WRITE 0 
-MULT 4 * 8 -> 32 -> {223} 
-ADD 3 + 0 -> 3 -> {224}
-ADD 3 + 32 -> 35 -> {223}
-MULT 71 * 55 -> 3905 -> {224} 
-ADD 3905 + -3905 -> 0 -> {224}
-OUTPUT { 0 } 
-WRITE 0 
-MULT 35 * 8 -> 280 -> {223} 
-ADD 7 + 0 -> 7 -> {224}
-ADD 280 + 7 -> 287 -> {223}
-ADD 6 + 94 -> 100 -> {224}
-ADD -100 + 100 -> 0 -> {224}
-OUTPUT { 0 } 
-WRITE 0 
-MULT 287 * 8 -> 2296 -> {223} 
-ADD 6 + 0 -> 6 -> {224}
-ADD 6 + 2296 -> 2302 -> {223}
-MULT 75 * 30 -> 2250 -> {225} 
-MULT 70 * 44 -> 3080 -> {224} 
-ADD -3080 + 3080 -> 0 -> {224}
-OUTPUT { 0 } 
-WRITE 0 
-MULT 2302 * 8 -> 18416 -> {223} 
-ADD 0 + 4 -> 4 -> {224}
-ADD 18416 + 4 -> 18420 -> {223}
-ADD 55 + 20 -> 75 -> {225}
-MULT 55 * 16 -> 880 -> {225} 
-MULT 13 * 94 -> 1222 -> {225} 
-MULT 16 * 55 -> 880 -> {225} 
-MULT 13 * 13 -> 169 -> {225} 
-ADD 75 + 13 -> 88 -> {224}
-ADD -88 + 88 -> 0 -> {224}
-OUTPUT { 0 } 
-WRITE 0 
-MULT 18420 * 8 -> 147360 -> {223} 
-ADD 0 + 2 -> 2 -> {224}
-ADD 147360 + 2 -> 147362 -> {223}
-MULT 20 * 57 -> 1140 -> {224} 
-ADD -1140 + 1140 -> 0 -> {224}
-OUTPUT { 0 } 
-WRITE 0 
-MULT 147362 * 8 -> 1178896 -> {223} 
-ADD 6 + 0 -> 6 -> {224}
-ADD 1178896 + 6 -> 1178902 -> {223}
-ADD 76 + 62 -> 138 -> {224}
-ADD 138 + -138 -> 0 -> {224}
-OUTPUT { 0 } 
-WRITE 0 
-MULT 1178902 * 8 -> 9431216 -> {223} 
-ADD 5 + 0 -> 5 -> {224}
-ADD 9431216 + 5 -> 9431221 -> {223}
-OUTPUT { 9431221 } 
-WRITE 9431221 
+CL-USER> (aoc::part2)
+
+POOR : PARAMS 0 5 
+READ {0} <- 5 
+CHECK at 225 is 5 
+
+ADD 5 + 1100 -> 1105 -> {6}
+
+JUMP-IF-TRUE activated to jumping to 238
+JUMP-IF-TRUE skipped
+JUMP-IF-TRUE activated to jumping to 247
+JUMP-IF-TRUE skipped
+JUMP-IF-TRUE activated to jumping to 256
+JUMP-IF-FALSE skipped
+JUMP-IF-FALSE activated to jumping to 265
+JUMP-IF-FALSE skipped
+JUMP-IF-FALSE activated to jumping to 274
+JUMP-IF-TRUE activated to jumping to 280
+ADD 5 + 5 -> 10 -> {225}
+
+ADD 294 + 0 -> 294 -> {0}
+
+JUMP-IF-TRUE activated to jumping to 294
+JUMP-IF-FALSE activated to jumping to 300
+ADD 10 + 10 -> 20 -> {225}
+
+ADD 314 + 0 -> 314 -> {0}
+
+JUMP-IF-FALSE activated to jumping to 314
+POOR : PARAMS 226 677 0 
+EQUALS -> FALSE . writing 0 to {0} 
+
+MULT 0 * 2 -> 0 -> {223} 
+
+JUMP-IF-FALSE activated to jumping to 329
+POOR : PARAMS 226 677 0 
+EQUALS -> FALSE . writing 0 to {0} 
+
+MULT 2 * 0 -> 0 -> {223} 
+
+JUMP-IF-FALSE activated to jumping to 344
+LESS THAN  226 < 226 -> False writing 0 to 0 
+MULT 0 * 2 -> 0 -> {223} 
+
+JUMP-IF-FALSE activated to jumping to 359
+POOR : PARAMS 677 226 0 
+EQUALS -> FALSE . writing 0 to {0} 
+
+MULT 2 * 0 -> 0 -> {223} 
+
+JUMP-IF-TRUE skipped
+ADD 0 + 1 -> 1 -> {223}
+
+LESS THAN  677 < 226 -> False writing 0 to 0 
+MULT 2 * 1 -> 2 -> {223} 
+
+JUMP-IF-FALSE activated to jumping to 389
+POOR : PARAMS 677 226 0 
+EQUALS -> FALSE . writing 0 to {0} 
+
+MULT 2 * 2 -> 4 -> {223} 
+
+JUMP-IF-TRUE skipped
+ADD 4 + 1 -> 5 -> {223}
+
+LESS THAN  226 < 677 -> True writing 1 to 0 
+MULT 2 * 5 -> 10 -> {223} 
+
+JUMP-IF-TRUE activated to jumping to 419
+POOR : PARAMS 677 226 1 
+EQUALS -> FALSE . writing 0 to {1} 
+
+MULT 2 * 10 -> 20 -> {223} 
+
+JUMP-IF-TRUE skipped
+ADD 1 + 20 -> 21 -> {223}
+
+POOR : PARAMS 226 226 0 
+EQUALS -> TRUE . writing 1 to {0} 
+
+MULT 2 * 21 -> 42 -> {223} 
+
+JUMP-IF-FALSE skipped
+ADD 42 + 1 -> 43 -> {223}
+
+LESS THAN  226 < 226 -> False writing 0 to 1 
+MULT 2 * 43 -> 86 -> {223} 
+
+JUMP-IF-FALSE activated to jumping to 464
+POOR : PARAMS 677 677 0 
+EQUALS -> TRUE . writing 1 to {0} 
+
+MULT 86 * 2 -> 172 -> {223} 
+
+JUMP-IF-TRUE activated to jumping to 479
+LESS THAN  677 < 226 -> False writing 0 to 1 
+MULT 2 * 172 -> 344 -> {223} 
+
+JUMP-IF-FALSE activated to jumping to 494
+LESS THAN  226 < 677 -> True writing 1 to 0 
+MULT 344 * 2 -> 688 -> {223} 
+
+JUMP-IF-TRUE activated to jumping to 509
+LESS THAN  677 < 226 -> False writing 0 to 1 
+MULT 2 * 688 -> 1376 -> {223} 
+
+JUMP-IF-FALSE activated to jumping to 524
+LESS THAN  226 < 226 -> False writing 0 to 0 
+MULT 2 * 1376 -> 2752 -> {223} 
+
+JUMP-IF-FALSE activated to jumping to 539
+LESS THAN  226 < 677 -> True writing 1 to 0 
+MULT 2752 * 2 -> 5504 -> {223} 
+
+JUMP-IF-FALSE skipped
+ADD 1 + 5504 -> 5505 -> {223}
+
+POOR : PARAMS 677 226 1 
+EQUALS -> FALSE . writing 0 to {1} 
+
+MULT 2 * 5505 -> 11010 -> {223} 
+
+JUMP-IF-FALSE activated to jumping to 569
+LESS THAN  677 < 226 -> False writing 0 to 0 
+MULT 11010 * 2 -> 22020 -> {223} 
+
+JUMP-IF-TRUE skipped
+ADD 1 + 22020 -> 22021 -> {223}
+
+LESS THAN  226 < 677 -> True writing 1 to 0 
+MULT 2 * 22021 -> 44042 -> {223} 
+
+JUMP-IF-TRUE activated to jumping to 599
+POOR : PARAMS 226 677 1 
+EQUALS -> FALSE . writing 0 to {1} 
+
+MULT 2 * 44042 -> 88084 -> {223} 
+
+JUMP-IF-TRUE skipped
+ADD 1 + 88084 -> 88085 -> {223}
+
+POOR : PARAMS 677 677 0 
+EQUALS -> TRUE . writing 1 to {0} 
+
+MULT 2 * 88085 -> 176170 -> {223} 
+
+JUMP-IF-TRUE activated to jumping to 629
+LESS THAN  226 < 226 -> False writing 0 to 1 
+MULT 2 * 176170 -> 352340 -> {223} 
+
+JUMP-IF-FALSE activated to jumping to 644
+POOR : PARAMS 226 226 0 
+EQUALS -> TRUE . writing 1 to {0} 
+
+MULT 352340 * 2 -> 704680 -> {223} 
+
+JUMP-IF-FALSE skipped
+ADD 1 + 704680 -> 704681 -> {223}
+
+POOR : PARAMS 226 677 1 
+EQUALS -> FALSE . writing 0 to {1} 
+
+MULT 2 * 704681 -> 1409362 -> {223} 
+
+JUMP-IF-TRUE skipped
+ADD 1 + 1409362 -> 1409363 -> {223}
+
+OUTPUT { 1409363 } 
+POOR : PARAMS 1409363 
+WRITE 1409363 
+
+POOR : HALT !! 
 T
 
-CODE should be 9431221
 
-
-
+............. 1409363  ........ should be result
 
 |#
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
