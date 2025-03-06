@@ -1,61 +1,20 @@
 
-import System.IO  
--- import Control.Monad
 
-rev = reverse
+-- focus on pure core working rather than parsing a file
 
--- tokenise contents of file into a sequence of number strings only
--- ignore newlines
--- ignore parenthesis
-tok2 [] [] rs = rev rs
-tok2 [] c rs = rev ((rev c) : rs)
-tok2 (h:t) [] rs = if isDigit h then tok2 t ([h]) rs else tok2 t [] rs
-tok2 (h:t) c rs = if isDigit h then tok2 t (h:c) rs else tok2 t [] ((rev c) : rs)
-tok xs = tok2 xs [] []
+prog1 :: [Int] = [1,9,10,3,2,3,11,0,99,30,40,50]
+prog2 :: [Int] = [1,0,0,0,99]
+prog3 :: [Int] = [2,3,0,3,99]
+prog4 :: [Int] = [2,4,4,5,99,0]
+prog5 :: [Int] = [1,1,1,4,99,5,6,0,99] 
+progX :: [Int] = [1, 0, 0, 3, 1, 1, 2, 3, 1, 3, 4, 3, 1, 5, 0, 3, 2, 13, 1, 19, 1, 19, 10, 23, 2, 10, 23, 27, 1, 27, 6, 31, 1, 13, 31, 35, 1, 13, 35, 39, 1, 39, 10, 43, 2, 43, 13, 47, 1, 47, 9, 51, 2, 51, 13, 55, 1, 5, 55, 59, 2, 59, 9, 63, 1, 13, 63, 67, 2, 13, 67, 71, 1, 71, 5, 75, 2, 75, 13, 79, 1, 79, 6, 83, 1, 83, 5, 87, 2, 87, 6, 91, 1, 5, 91, 95, 1, 95, 13, 99, 2, 99, 6, 103, 1, 5, 103, 107, 1, 107, 9, 111, 2, 6, 111, 115, 1, 5, 115, 119, 1, 119, 2, 123, 1, 6, 123, 0, 99, 2, 14, 0, 0]
 
-
-
--- split a string into multiple strings 
-split2 [] [] rs = rev rs
-split2 [] c rs = rev ((rev c) : rs)
-split2 (h:t) [] rs = if h == '\n' then split2 t [] rs
-                    else split2 t ([h]) rs
-split2 (h:t) c rs = if h == '\n' then split2 t [] ((rev c) : rs)
-                    else split2 t (h:c) rs
-split xs = split2 xs [] []
-
---- all characters 0 to 9 inclusive
-isDigit '0' = True
-isDigit '1' = True
-isDigit '2' = True
-isDigit '3' = True
-isDigit '4' = True
-isDigit '5' = True
-isDigit '6' = True
-isDigit '7' = True
-isDigit '8' = True
-isDigit '9' = True
-isDigit _ = False
-
--- is list all digits ?
-allDigits [] = True
-allDigits (h:t) = if isDigit h then allDigits t else False
-
--- filter any strings not allDigits
-
--- convert string integer to an integer
-s2num2 [] n = n
-s2num2 ('0':t) n = s2num2 t (n*10 + 0)
-s2num2 ('1':t) n = s2num2 t (n*10 + 1)
-s2num2 ('2':t) n = s2num2 t (n*10 + 2)
-s2num2 ('3':t) n = s2num2 t (n*10 + 3)
-s2num2 ('4':t) n = s2num2 t (n*10 + 4)
-s2num2 ('5':t) n = s2num2 t (n*10 + 5)
-s2num2 ('6':t) n = s2num2 t (n*10 + 6)
-s2num2 ('7':t) n = s2num2 t (n*10 + 7)
-s2num2 ('8':t) n = s2num2 t (n*10 + 8)
-s2num2 ('9':t) n = s2num2 t (n*10 + 9)
-s2num s = s2num2 s 0
+-- haskell !! operator gives nth element of list zeroth 0 is first element
+-- position p
+-- op !! p
+-- op1 !! p + 1
+-- op2 !! p + 2
+-- tar !! p + 3
 
 -- replace item N with x if possible
 put2 [] n tar x = []
@@ -71,37 +30,30 @@ p2 = put [0,1,2,3] 2 7
 p3 = put [0,1,2,3] 3 7
 p4 = put [0,1,2,3] 4 7
 
+op_halt :: Int = 99
+op_add :: Int = 1
+op_mul :: Int = 2
 
-
-
--- haskell !! operator gives nth element of list zeroth 0 is first element
--- position p
--- op !! p
--- op1 !! p + 1
--- op2 !! p + 2
--- tar !! p + 3
-
-run2 code p len =
-  if p < 0 then code 
-  else if p >= len then code
-  else let op = code !! p
-           
+run2 c p l =
+  if p < 0 then c 
+  else if p >= l then c
+  else let op = c !! p           
        in
-         if op == 99 then
-           code
-         else let op1 = code !! (code !! (p + 1))
-                  op2 = code !! (code !! (p + 2))
-                  tar = code !! (p + 3)
-              in
-                if op == 1 then
-                  run2 (put code tar (op1 + op2)) (p + 4) len
-                else if op == 2 then
-                       run2 (put code tar (op1 * op2)) (p + 4) len
-                     else code
-                          
+    if op == op_halt then c -- done
+    else let op1 = c !! (c !! (p + 1))
+             op2 = c !! (c !! (p + 2))
+             tar = c !! (p + 3)
+         in
+      if op == op_add then
+        run2 (put c tar (op1 + op2)) (p + 4) l
+      else if op == op_mul then
+        run2 (put c tar (op1 * op2)) (p + 4) l
+      else c
 
 
-run code = run2 code 0 (length code)
+run c = run2 c 0 (length c)
+           
+part1 = run progX
 
 -- noun 0 to 99
 -- verb 0 to 99 
@@ -116,36 +68,28 @@ searchFor noun verb nums =
                (noun,verb, 100*noun + verb) : searchFor (noun +1) verb nums
              else searchFor (noun +1) verb nums
                    
-                      
+
+expr =  [let progA = put progX 1 noun in
+            let progB = put progA 2 verb in
+              let out = (run progB) !! 0 in
+                (out,noun,verb) | noun <- [0 .. 99] , verb <- [0 .. 99]]
+
+-- destructuring tuple
+win = filter (\ (o,n,v) -> o == 19690720 ) expr
+
+-- map over solutions
+part2 = map (\ (o,n,v) -> (100*n) + v) win
 
 
--- -- list comprehension 
--- filter (\x -> (x !! 0) == 19690720)  [ (let n1 = put nums 1 noun in let n2 = put n1 2 verb in n3 = run n2)  | noun <- [0..99], verb <- [0..99] ]
-  
-  
+-- no io required in the solution  
 main :: IO ()
-main = do  
-        let list = []
-        handle <- openFile "../input" ReadMode
-        contents <- hGetContents handle
-        print contents
-        --print (tok contents)
-        let nums = map s2num (tok contents)
-        print nums
-        
-        let n1 = (put nums 1 12) in
-          let n2 = (put n1 2 2) in
-            do print n2
-               let n3 = run n2 in
-                 print (n3 !! 0)
-
-        print (searchFor 0 0 nums)
-                 
-        hClose handle
-        
+main = do    
+   return ()
 
 
--- f :: [String] -> [Int]
--- f = map read
+-- -- f :: [String] -> [Int]
+-- -- f = map read
+
+
 
 
