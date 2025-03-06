@@ -10,14 +10,25 @@ Specify license here
 ## 
 
 ```
+;; navigate to the asd file 
+;; in slime C-c C-k
+;;
+;; (ql:quickload :aoc-test)
+
 (in-package :aoc-test)
 
-;; run root test suite that runs everything
-(run! 'my-system)
+;; run root test suite that runs everything  , one line per pass or fail
+(run 'my-system)
 
 ;; run part of test suite only called foo-bar
+(run 'foo-bar)
+
+;; run tests and show full failures
+(run! 'my-system)
 (run! 'foo-bar)
+
 ```
+
 
 
 
