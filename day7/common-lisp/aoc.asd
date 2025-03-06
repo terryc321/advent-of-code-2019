@@ -20,7 +20,10 @@
   :version "0.0.1"
   :serial t
   :depends-on (#:aoc #:fiveam)
-  :components ((:file "aoc-test-package")
+  :components (
+	       (:file "aoc-package")
+               (:file "aoc")
+	       (:file "aoc-test-package")
                (:file "aoc-test")
 	       ))
 

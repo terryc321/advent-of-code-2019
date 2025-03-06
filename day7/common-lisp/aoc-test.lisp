@@ -10,6 +10,7 @@
 (def-suite foo-bar
   :description "Test the foo function."
   :in my-system)
+
 (in-suite foo-bar)
 
 
@@ -18,6 +19,7 @@
 
 (test foo-is-3
   (is (= (aoc::foo) 3)))
+
 
 
 
