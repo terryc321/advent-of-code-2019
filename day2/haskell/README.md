@@ -90,9 +90,11 @@ some sort of s expression tree
 
 there is a lot going on underneath the hood to be sure.
 
-## what is containers ? 
+## what is the "containers" package ? 
 
-Data.Map and Data.Set is found in containers package 
+Data.Map and Data.Set is found in containers package , i think.
+
+
 
 ## performance 
 

@@ -84,13 +84,26 @@ let part2 () =
       else
         iter (noun + 1) verb res
   in
-  iter 0 0 [] ;
+  iter 0 0 [] ;;
 
   
-part2()
+part2();;
 
 
-
+(** 
+val f : int -> int = <fun>
+val run : int array -> int = <fun>
+val part1 : unit -> int = <fun>
+- : int = 4090701
+val part2 : unit -> (int * int) list = <fun>
+- : (int * int) list = [(64, 21)]
+# 64 * 21;;
+- : int = 1344
+# 64 * 100 + 21
+;;
+- : int = 6421
+# 
+**)
 
 
    
