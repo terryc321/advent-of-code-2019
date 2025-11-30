@@ -32,17 +32,58 @@ height 0 .. 9
 
 reduce to lowest multiples
 
+angle horizontal - oy zero -
+angle vertical - ox zero 
+
+
+angle generator of all possible angles in any space whatever
+if there is an asteroid at that location - then it stops and does not generate any more locations
+
+0,0 start
+
+-1 0
+1 0
+0 -1
+0 1
+1 1
+-1 1
+1 -1
+-1 -1
+
+for x from -r to + r
+ for y from -r to + r
+   
+
+       a  |  a
+        a | a
+         a|a  
+------aaaaOaaaaa------
+         a|a 
+        a | a
+       a  |  a
+
+notion of being BLOCKED by another asteroid
+
+
+
 |#
 
 (defun create-fn (ox oy sym sym2)
-  (lambda (x y)
-    (multiple-value-bind (k1 r1) (floor x ox)
-      (multiple-value-bind (k2 r2) (floor y oy)
-	(cond
-	  ((and (= x ox)(= y oy)) sym)
-	  ((and (= x 0)(= y 0)) nil)	  
-	  ((and (= k1 k2) (= r1 0)(= r2 0)) sym2)
-	  (t nil))))))
+  (cond
+    ((= ox 0) ;;vertical
+     nil)
+    ((= oy 0) ;; horizontal
+     nil)
+    (t (let ((angle (/ ox oy)))
+	 (lambda (x y)
+	   (cond
+	     ((= x 0) nil)
+	     ((= y 0) nil)
+	     (t (let ((t-angle (/ x y)))
+		  (cond
+		    ((and (= x ox)(= y oy)) sym)
+		    ((and (> x ox)(> y ox) (= angle t-angle)) sym2)
+		    (t nil))))))))))
 
 
 
