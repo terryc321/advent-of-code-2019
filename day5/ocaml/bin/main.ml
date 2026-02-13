@@ -63,7 +63,7 @@ let execute_addi (t:tape) : tape =
                                 let val2 = Array.get ci index2 in                                
                                 let sum = val1 + val2 in 
                                 ( Array.set ci index3 sum ;
-                                  Printf.printf "executed ADD instruction %d + %d => %d into %d\n" val1 val2 sum index3 ;
+                                  (* Printf.printf "executed ADD instruction %d + %d => %d into %d\n" val1 val2 sum index3 ; *)
                                   Tape(ci,Ok, Pos (p+4),Len len))
   | _ -> t
 
@@ -78,7 +78,7 @@ let execute_muli (t:tape) : tape =
                                 let val2 = Array.get ci index2 in                                
                                 let prod = val1 * val2 in 
                                 ( Array.set ci index3 prod ;
-                                  Printf.printf "executed MUL instruction %d * %d => %d into %d\n" val1 val2 prod index3 ;
+                                  (* Printf.printf "executed MUL instruction %d * %d => %d into %d\n" val1 val2 prod index3 ; *)
                                   Tape(ci,Ok, Pos (p+4),Len len))
   | _ -> t
 
@@ -87,7 +87,7 @@ let execute_muli (t:tape) : tape =
 let execute_halt (t:tape) : tape =
   match t with
   | Tape(i,Ok,Pos p,Len len) -> let ci = Array.copy i in 
-                                ( Printf.printf "executed HALT instruction \n" ;
+                                ( (* Printf.printf "executed HALT instruction \n" ; *)
                                   Tape(ci,Halt, Pos (p+4),Len len))
   | _ -> t
 
