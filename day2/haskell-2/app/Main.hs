@@ -69,9 +69,6 @@ sim v i = let op = lookup i v
                (99) -> Just v
 
 
-                       
-                                               
-
 
 
 -- (defn sim [v2]
