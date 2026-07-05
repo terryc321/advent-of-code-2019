@@ -211,23 +211,36 @@
 ;;   (cond 
    
 
-#|
+
 ;; TODO 
 
 (define (common-ancestor a b)
-  (let ((pa (ancestor-tree a))
-	(pb (ancestor-tree b)))
-    (define (whittle xs ys)
-      (let ((hx (car xs))
-	    (hy (car ys)))
+  (let ((pa (reverse (ancestor-tree a)))
+	(pb (reverse (ancestor-tree b))))
+    (define (tails)
+      (cond
+       ((equal? (car pa) (car pb))
 	(cond
-	 ((equal? hx hy) (let ((next (whittle (cdr xs) (cdr ys))))
-			   (cond
-			    ((not next) #f)
-			    (#t 
-  |#     
+	 ((equal? (car (cdr pa)) (car (cdr pb)))
+	  (set! pa (cdr pa))
+	  (set! pb (cdr pb))
+	  (tails))
+	 (#t (list pa pb))))))
+    (tails)))
 
-;;(common-ancestor 'PYOU 'PSAN)
+(define result (common-ancestor 'PYOU 'PSAN))
+(define orbit-a (reverse (first result)))
+(define orbit-b (reverse (second result)))
+;; orbit-a (PYOU P2MT PQ6S PHHY PRM7 ... PYCH)
+;;                ^-- start here 
+;; orbit-b (PSAN PC8V PDHH PQJS PSB9 PFCT ... PYCH)
+;;                ^-- finish here
+(define path (append (cdr (cdr orbit-a)) (cdr (reverse (cdr (cdr orbit-b))))))
+;; (length path) => 522  rejected too low 
+;; 524 ?? rejected too high
+;; logically must be 523 .
+
+
 
 
 
