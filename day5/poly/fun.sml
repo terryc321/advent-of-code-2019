@@ -2,6 +2,8 @@
 (* for this type of problem it appears standard ml is too brittle 
 cannot seem to update tape correctly ?
 
+ok - this was a programming err on my part !
+
 *)
 (* sml-mode polyml day5 cont/d from day2 *)
 (* use fun.sml *)
@@ -237,13 +239,36 @@ tape
 ***)			   
 fun interpret (tape : int array , reader : unit -> int , writer : int -> unit) =
     let val ip = ref 0 ;
-	fun one_arg () = 
+	(* val tape = ref tp ; *)
+	fun one_arg_read () = 
 	    let val pcode = A.sub(tape , !ip) ;
 		val opcode = parameter_opcode pcode;
 		val p1 = parameter_mode1 pcode;
 		val arg1 = A.sub(tape, (!ip) + 1) ; 
-		val v1 = A.sub(tape,arg1) (* v1 is positional*)
+		val v1 = arg1 (* A.sub(tape,arg1)*) (* v1 is positional*) 
 	    in (v1)
+	    end ;
+	fun one_arg_write () = 
+	    let val pcode = A.sub(tape , !ip) ;
+		val opcode = parameter_opcode pcode;
+		val p1 = parameter_mode1 pcode;
+		val arg1 = A.sub(tape, (!ip) + 1) ; 
+		val v1 = (case p1 of 0 => A.sub(tape, arg1) | _ => arg1);	   
+	    in (v1)
+	    end ;
+	fun two_arg () = 
+	    let val pcode = A.sub(tape , !ip) ;
+		val opcode = parameter_opcode pcode;
+		val p1 = parameter_mode1 pcode;
+		val p2 = parameter_mode2 pcode; 
+                (* val p3 = parameter_mode3 pcode; *)
+		val arg1 = A.sub(tape, (!ip) + 1) ; 
+		val arg2 = A.sub(tape, (!ip) + 2) ;
+		(* val arg3 = A.sub(tape, (!ip) + 3) ; *)
+		val v1 = (case p1 of 0 => A.sub(tape, arg1) | _ => arg1);	   
+		val v2 = (case p2 of 0 => A.sub(tape, arg2) | _ => arg2);	   
+		(* val v3 = arg3   *)
+	    in (v1,v2)
 	    end ;
 	fun three_arg () = 
 	    let val pcode = A.sub(tape , !ip) ;
@@ -259,7 +284,7 @@ fun interpret (tape : int array , reader : unit -> int , writer : int -> unit) =
 		val v3 = arg3  
 	    in (v1,v2,v3)
 	    end ;
-	fun interpret_loop (tape) =
+	fun interpret_loop () =
 	    (
 	      (* ?? debugger for standard ml ?? 
       print "tape = " ; 
@@ -269,67 +294,108 @@ fun interpret (tape : int array , reader : unit -> int , writer : int -> unit) =
 
 	      let val raw = (A.sub(tape , !ip)) ;
 		  val opcode = parameter_opcode raw
-	      in 
+	      in
+		 
+	      (*
 	      if (!ip) = 2 then 
 		  (print "ip_2 check = " ; print (Int.toString (!ip)) ; 
 		   print "\n" ;
 		  print "at 225 is  = " ; print (Int.toString (A.sub(tape,225))) ; 
 		  print "\n" 
 		  ) else () ;
+		 
 	      print "ip = " ; print (Int.toString (!ip)) ; print "\n" ;
 	      print "raw code = " ; print (Int.toString raw) ; print "\n" ;
 	      print "opcode = " ; print (Int.toString opcode) ; print "\n" ;
+		 *)
 	      case opcode of 
-		  1 => interpret_add (tape)
-		| 2 => interpret_mult (tape)
-		| 3 => interpret_read (tape)
-		| 4 => interpret_write (tape)
+		  1 => interpret_add ()
+		| 2 => interpret_mult ()
+		| 3 => interpret_read ()
+		| 4 => interpret_write ()
+		| 5  => interpret_jump_if_true ()
+		| 6  => interpret_jump_if_false ()
+		| 7  => interpret_less_than ()
+		| 8  => interpret_equals ()
 		| 99 => (tape,!ip,true)
 		| n  => (print "unrecognised opcode " ; 
 		         print (Int.toString opcode) ; 
 			 print " ? \n"; 
 			 (tape,!ip,false))
 	      end) 	
-	and interpret_read (tape) = (* TODO *)
-	    let val (v1) = one_arg ()
+	and interpret_equals () = 
+	    let val (v1,v2,v3) = three_arg () ;
+		val res = if v1 = v2 then 1 else 0 			   
 	    in 
-		(A.update(tape, v1 , reader()) ; 
-		 print "check read : " ; print (Int.toString (A.sub(tape,v1))) ; 
-		 print " <> "; print (Int.toString 1) ; 
-		 print "\n" ; 
-		 ip := (!ip) + 2 ; 
-		 interpret_loop (tape))
-	    end			      		      
-	and interpret_write (tape) =  (* TODO *)
-	    let val (v1) = one_arg ()
-	    in 
-		(writer v1 ;
-		 ip := (!ip) + 2 ; 
-		 interpret_loop (tape))
+		(A.update(tape, v3 , res) ; 
+		 ip := (!ip) + 4 ; 
+		 interpret_loop ())
 	    end			      
-	and interpret_add (tape) = 
+	and interpret_less_than () = 
+	    let val (v1,v2,v3) = three_arg () ;
+		val res = if v1 < v2 then 1 else 0 			   
+	    in 
+		(A.update(tape, v3 , res) ; 
+		 ip := (!ip) + 4 ; 
+		 interpret_loop ())
+	    end			      
+	and interpret_jump_if_true () = 
+	    let val (v1,v2) = two_arg ()
+	    in if not (v1 = 0)
+	       then (ip := v2 ; interpret_loop ())
+	       else (ip := (!ip) + 3 ; interpret_loop ()) 
+	    end
+	and interpret_jump_if_false () = 
+	    let val (v1,v2) = two_arg ()
+	    in if v1 = 0
+	       then (ip := v2 ; interpret_loop ())
+	       else (ip := (!ip) + 3 ; interpret_loop ()) 
+	    end		
+	and interpret_read () = 
+	    let val (v1) = one_arg_read () (*piggyback interpret_write *)
+	    in 
+		(A.update(tape, v1 , reader()) ;   (* write directly to value in one_arg *)
+		 (*
+		 print "check read : index " ;	print (Int.toString v1) ; print " " ;
+		 print (Int.toString (A.sub(tape,v1))) ; 
+		 print " <> "; print (Int.toString 1) ; 
+		 print "\n" ;
+		 *)
+		 ip := (!ip) + 2 ; 
+		 interpret_loop ())
+	    end			      		      
+	and interpret_write () =  
+	    let val (v1) = one_arg_write ()
+	    in    (* awkward write indirectly to value one_arg *)
+		(writer v1 ; (*(A.sub(tape,v1)) ;*) 
+		 ip := (!ip) + 2 ; 
+		 interpret_loop ())
+	    end			      
+	and interpret_add () = 
 	    let val (v1,v2,v3) = three_arg ()
 	    in 
 		(
-		  print "add " ; print (Int.toString v1) ; print " + ";
+		 (* print "add " ; print (Int.toString v1) ; print " + ";
 		  print (Int.toString v2) ; print " => ";
 		  print (Int.toString v3) ; print "\n" ;
+		  *)
 		 A.update(tape, v3 ,v1 + v2) ; 
-		  print "check " ; print (Int.toString (A.sub(tape,v3))) ; 
+		  (*print "check " ; print (Int.toString (A.sub(tape,v3))) ; 
 		  print " <> "; print (Int.toString (v1 + v2)) ; 
-		  print "\n" ; 
+		  print "\n" ;
+                  *)
 		 ip := (!ip) + 4 ; 
-		 interpret_loop (tape))
+		 interpret_loop ())
 	    end			      
-	and interpret_mult (tape) =
+	and interpret_mult () =
 	    let val (v1,v2,v3) = three_arg ()
 	    in 
 		(A.update(tape, v3 ,v1 * v2) ;
 		 ip := (!ip) + 4;
-		 interpret_loop (tape))
+		 interpret_loop ())
 	    end			      
     in 
-	interpret_loop (tape)
+	interpret_loop ()
     end
        
 
@@ -382,7 +448,6 @@ fun v2day2part1 () = interpret(day2tape() , reader ,writer )
 fun day5tape () = A.fromList [3,225,1,225,6,6,1100,1,238,225,104,0,1001,152,55,224,1001,224,~68,224,4,224,1002,223,8,223,1001,224,4,224,1,224,223,223,1101,62,41,225,1101,83,71,225,102,59,147,224,101,~944,224,224,4,224,1002,223,8,223,101,3,224,224,1,224,223,223,2,40,139,224,1001,224,~3905,224,4,224,1002,223,8,223,101,7,224,224,1,223,224,223,1101,6,94,224,101,~100,224,224,4,224,1002,223,8,223,101,6,224,224,1,224,223,223,1102,75,30,225,1102,70,44,224,101,~3080,224,224,4,224,1002,223,8,223,1001,224,4,224,1,223,224,223,1101,55,20,225,1102,55,16,225,1102,13,94,225,1102,16,55,225,1102,13,13,225,1,109,143,224,101,~88,224,224,4,224,1002,223,8,223,1001,224,2,224,1,223,224,223,1002,136,57,224,101,~1140,224,224,4,224,1002,223,8,223,101,6,224,224,1,223,224,223,101,76,35,224,1001,224,~138,224,4,224,1002,223,8,223,101,5,224,224,1,223,224,223,4,223,99,0,0,0,677,0,0,0,0,0,0,0,0,0,0,0,1105,0,99999,1105,227,247,1105,1,99999,1005,227,99999,1005,0,256,1105,1,99999,1106,227,99999,1106,0,265,1105,1,99999,1006,0,99999,1006,227,274,1105,1,99999,1105,1,280,1105,1,99999,1,225,225,225,1101,294,0,0,105,1,0,1105,1,99999,1106,0,300,1105,1,99999,1,225,225,225,1101,314,0,0,106,0,0,1105,1,99999,1008,677,677,224,1002,223,2,223,1006,224,329,1001,223,1,223,8,677,226,224,102,2,223,223,1006,224,344,101,1,223,223,1107,226,226,224,1002,223,2,223,1006,224,359,1001,223,1,223,1108,677,226,224,102,2,223,223,1005,224,374,1001,223,1,223,1007,226,226,224,102,2,223,223,1006,224,389,1001,223,1,223,108,677,677,224,1002,223,2,223,1005,224,404,1001,223,1,223,1007,677,677,224,102,2,223,223,1005,224,419,1001,223,1,223,8,226,677,224,102,2,223,223,1005,224,434,101,1,223,223,1008,677,226,224,102,2,223,223,1006,224,449,1001,223,1,223,7,677,677,224,102,2,223,223,1006,224,464,1001,223,1,223,8,226,226,224,1002,223,2,223,1005,224,479,1001,223,1,223,7,226,677,224,102,2,223,223,1006,224,494,1001,223,1,223,7,677,226,224,1002,223,2,223,1005,224,509,101,1,223,223,107,677,677,224,102,2,223,223,1006,224,524,101,1,223,223,1007,677,226,224,102,2,223,223,1006,224,539,101,1,223,223,107,226,226,224,1002,223,2,223,1006,224,554,101,1,223,223,1008,226,226,224,102,2,223,223,1006,224,569,1001,223,1,223,1107,677,226,224,1002,223,2,223,1005,224,584,101,1,223,223,1107,226,677,224,102,2,223,223,1005,224,599,101,1,223,223,1108,226,677,224,102,2,223,223,1005,224,614,101,1,223,223,108,677,226,224,102,2,223,223,1005,224,629,101,1,223,223,107,226,677,224,102,2,223,223,1006,224,644,1001,223,1,223,1108,226,226,224,1002,223,2,223,1006,224,659,101,1,223,223,108,226,226,224,102,2,223,223,1005,224,674,101,1,223,223,4,223,99,226]
 
 
-
 fun day5part1 () = 
    let val reader : unit -> int = fn _ => 1 ;  (* always returns 1 *)
        val (writer : int -> unit ,notepad : unit -> int list) = makeWriter() ;
@@ -392,14 +457,13 @@ fun day5part1 () =
       (out , "wrote =" , notepad ())
    end
 
-
 fun letc () = let val a = 3 	(* 3 *)
 	          val b = a + a (* 3 + 3 or 6 *)
                   val c = b + b (* 6 + 6 or 12 *)
 	      in c  		(* c = 12 *)
 	      end
 
-		    
+		  
 (*		    
 structure Writer = 
   struct
@@ -411,13 +475,135 @@ structure Writer =
 
     (* Functions *)
     fun add a b = a + b
-  end;		    
+  end;
+
+3,9,8,9,10,9,4,9,99,-1,8 - Using position mode, consider whether the input is equal to 8; output 1 (if it is) or 0 (if it is not). -- done
+3,9,7,9,10,9,4,9,99,-1,8 - Using position mode, consider whether the input is less than 8; output 1 (if it is) or 0 (if it is not). -- o
+3,3,1108,-1,8,3,4,3,99 - Using immediate mode, consider whether the input is equal to 8; output 1 (if it is) or 0 (if it is not). -- todo
+3,3,1107,-1,8,3,4,3,99 - Using immediate mode, consider whether the input is less than 8; output 1 (if it is) or 0 (if it is not). --todo 
+
+copy Array ? ensure not mutated ?
+
 *)			
-			 
 
-			 
-			       
+fun day5 (tape , n) = 
+   let val reader : unit -> int = fn _ => n ;  
+       val (writer : int -> unit ,notepad : unit -> int list) = makeWriter() ;
+       val out = interpret(tape , reader ,writer ) 
+   in 
+      print "finished state \n" ; 
+      (out , "wrote =" , notepad ())
+   end
 
-			       
-				       
-			       
+(* caveat negative numbers are squiggles ~1 is negative 1 ?? *)       
+
+(*
+3,9,8,9,10,9,4,9,99,-1,8 - Using position mode, consider whether the input is equal to 8; output 1 (if it is) or 0 (if it is not).
+tests equal to 
+*)
+val test_eq1 = fn () => day5 (A.fromList [3,9,8,9,10,9,4,9,99,~1,8] , 8) (* 1 *)
+val test_eq2 = fn () => day5 (A.fromList [3,9,8,9,10,9,4,9,99,~1,8] , 12) (* 0 *)
+
+(*
+3,9,7,9,10,9,4,9,99,~1,8 - Using position mode, consider whether the input is less than 8; output 1 (if it is) or 0 (if it is not).
+*)
+val test_lt1 = fn () => day5 (A.fromList [3,9,7,9,10,9,4,9,99,~1,8] , 5) (* 1 yes 5 < 8*)
+val test_lt2 = fn () => day5 (A.fromList [3,9,7,9,10,9,4,9,99,~1,8] , 8) (* 0 no 8 < 8 *)
+
+(*
+3,3,1108,~1,8,3,4,3,99 - Using immediate mode, consider whether the input is equal to 8;
+output 1 (if it is) 
+output 0 (if it is not). 
+*)
+val test_eq3 = fn () => day5 (A.fromList [3,3,1108,~1,8,3,4,3,99] , 8) (* expect 1 *)
+val test_eq4 = fn () => day5 (A.fromList [3,3,1108,~1,8,3,4,3,99] , 12) (* expect 0 *)
+			  
+(*
+3,3,1107,~1,8,3,4,3,99 - Using immediate mode, consider whether the input is less than 8; output 1 (if it is) or 0 (if it is not). --todo
+
+reads value into position 3 where we have ~1
+ 1107 means less than 5 < 8   11 means immediate mode both args
+
+*)
+val test_lt3 = fn () => day5 (A.fromList [3,3,1107,~1,8,3,4,3,99] , 5) (* 1 yes 5 < 8 *)
+val test_lt4 = fn () => day5 (A.fromList [3,3,1107,~1,8,3,4,3,99] , 8) (* 0 no 8 < 8 *)
+			 
+(* 
+Here are some jump tests that take an input, then output 0 if the input was zero 
+or 1 if the input was non-zero:
+3,12,6,12,15,1,13,14,13,4,13,99,~1,0,1,9 (using position mode)
+ *)			       
+val (test_jmp1,test_jmp2) = 
+    let val xs = [3,12,6,12,15,1,13,14,13,4,13,99,~1,0,1,9]
+    in (fn () => day5 (A.fromList xs, 0) , (* expect 0 *)
+	fn () => day5 (A.fromList xs, 10)) (* expect 1 *)
+    end 
+
+(* 
+Here are some jump tests that take an input, then output 0 if the input was zero 
+or 1 if the input was non-zero:
+3,3,1105,~1,9,1101,0,0,12,4,12,99,1 (using immediate mode)
+ *)			       
+val (test_jmp3,test_jmp4) = 
+    let val xs = [3,3,1105,~1,9,1101,0,0,12,4,12,99,1]
+    in (fn () => day5 (A.fromList xs, 0) , (* expect 0 *)
+	fn () => day5 (A.fromList xs, 10)) (* expect 1 *)
+    end 
+
+(* 
+3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,
+1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,
+999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99
+
+The above example program uses an input instruction to ask for a single number. The program will then output 999 if the input value is below 8, output 1000 if the input value is equal to 8, or output 1001 if the input value is greater than 8.
+ *)
+
+(* val _ = PolyML.Debugger.debug := true;			 *)
+val _ = PolyML.Compiler.debug := true;
+
+(* https://www.polyml.org/documentation/Tutorials/Debugging.html *)
+open PolyML.Debug;
+
+(* trace true *)
+(* trace false *)
+	       
+val (test_big1,test_big2, test_big3) = 
+ let val xs = [3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99]
+ in 
+     (fn () => day5 (A.fromList xs,7) , 	(* expect 999 if input < 8 *)
+      fn () => day5 (A.fromList xs,8) , 	(* expect 1000 if input 8 *)
+      fn () => day5 (A.fromList xs,9) ) 	(* expect 1001 if input > 8  *)
+ end
+
+(* how do we copium with crashing procedure like subscript out of bounds 
+  https://www.polyml.org/documentation/Papers/poly/polymanual.html 
+*)
+
+
+(* if a language is not bothered to document how its supposed to work ,
+ why bother
+1982 polyml uses begin ... end , this is not used anymore
+ (begin
+	    10 div 0
+	catch proc (name: string) integer
+	 begin
+	  print("Exception-");
+          print(name);
+	  9999
+         end
+        end)
+
+actually
+  10 div 0 ;
+Exception- Div raised
+
+10 div 0 handle Div => 999  ; 
+
+ *)
+
+fun day5part2 () = day5 (day5tape() , 5)
+
+			
+
+			
+			
