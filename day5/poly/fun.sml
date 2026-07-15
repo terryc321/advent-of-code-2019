@@ -603,7 +603,193 @@ Exception- Div raised
 
 fun day5part2 () = day5 (day5tape() , 5)
 
-			
+val day7list = [3,8,1001,8,10,8,105,1,0,0,21,46,67,76,97,118,199,280,361,442,99999,3,9,1002,9,3,9,101,4,9,9,102,3,9,9,1001,9,3,9,1002,9,2,9,4,9,99,3,9,102,2,9,9,101,5,9,9,1002,9,2,9,101,2,9,9,4,9,99,3,9,101,4,9,9,4,9,99,3,9,1001,9,4,9,102,2,9,9,1001,9,4,9,1002,9,5,9,4,9,99,3,9,102,3,9,9,1001,9,2,9,1002,9,3,9,1001,9,3,9,4,9,99,3,9,101,1,9,9,4,9,3,9,1001,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,1001,9,1,9,4,9,3,9,101,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,2,9,4,9,3,9,101,1,9,9,4,9,99,3,9,102,2,9,9,4,9,3,9,101,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,1001,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,102,2,9,9,4,9,3,9,101,1,9,9,4,9,3,9,101,2,9,9,4,9,99,3,9,1002,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,101,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,1002,9,2,9,4,9,3,9,101,1,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,1,9,4,9,99,3,9,1001,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,101,2,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,101,1,9,9,4,9,3,9,1001,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,1,9,4,9,99,3,9,1002,9,2,9,4,9,3,9,101,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,101,2,9,9,4,9,3,9,1001,9,2,9,4,9,3,9,101,1,9,9,4,9,3,9,102,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,1001,9,2,9,4,9,3,9,1002,9,2,9,4,9,99] 			
 
+fun day7tape () = A.fromList day7list 
+
+(* reload shorthand *)
+fun rl () = use "fun.sml";
+
+
+(* permute 0 1 2 3 4
+ either as a collection or just one by one
+0 1 2 3 4 
+ *)
+
+
+(* phase setting followed by a input from previous amplifier ,
+  if no previous amplifier use value 0
+  we need a compound reader that will give multiple values
+
+  makeReader (phase , in ) 
+
+   caveat in is a reserved word 
+ *)
+fun makeReader (phase :int ,input : int) =
+    let val state = ref 0
+    in fn () => (case !state of  (* remember we read , forever else just give input *)
+		     0 => (state := (!state) + 1 ; phase)
+		   | _ => input)
+    end
 			
-			
+val r = makeReader (10 , 3 )
+		   
+fun day7 (tape , phase , input ) : int = 
+   let val reader = makeReader (phase,input) ;  
+       val (writer ,notepad ) = makeWriter() ;
+       val out = interpret(tape , reader ,writer ) 
+   in 
+      (* print "finished state \n" ; 
+      (out , "wrote =" , notepad ())
+       *)
+       case notepad () of
+	   [n] => n
+	| xs => List.last xs
+   end
+       
+(*
+Here are some example programs:
+Max thruster signal 43210 (from phase setting sequence 4,3,2,1,0):
+3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0
+caveat ~ for - negative numbers
+
+remember we need a fresh tape each time 
+*)
+val trial1 = let fun mk_tape () =
+		     A.fromList [3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0] ;
+		 val out1 = day7(mk_tape (), 4 , 0) ; (* 0 default no prev *)
+		 val out2 = day7(mk_tape (), 3 , out1) ;
+		 val out3 = day7(mk_tape (), 2 , out2) ;
+		 val out4 = day7(mk_tape (), 1 , out3) ;
+		 val out5 = day7(mk_tape (), 0 , out4)
+	     in out5
+	     end
+
+(*
+Max thruster signal 54321 (from phase setting sequence 0,1,2,3,4):
+
+3,23,3,24,1002,24,10,24,1002,23,~1,23,101,5,23,23,1,24,23,23,4,23,99,0,0
+*)
+val trial2 = (fn (a,b,c,d,e) =>
+		let fun mk_tape () =
+		     A.fromList [3,23,3,24,1002,24,10,24,1002,23,~1,23,101,5,23,23,1,24,23,23,4,23,99,0,0];
+		 val out1 = day7(mk_tape (), a , 0) ; (* 0 default no prev *)
+		 val out2 = day7(mk_tape (), b , out1) ;
+		 val out3 = day7(mk_tape (), c , out2) ;
+		 val out4 = day7(mk_tape (), d , out3) ;
+		 val out5 = day7(mk_tape (), e , out4)
+	     in out5
+	     end)(0,1,2,3,4)
+		 
+(*
+Max thruster signal 65210 (from phase setting sequence 1,0,4,3,2):
+
+3,31,3,32,1002,32,10,32,1001,31,~2,31,1007,31,0,33,
+1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0
+
+*)
+
+val trial3 = (fn (a,b,c,d,e) =>
+		let fun mk_tape () =
+		     A.fromList [3,31,3,32,1002,32,10,32,1001,31,~2,31,1007,31,0,33,1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0];
+		 val out1 = day7(mk_tape (), a , 0) ; (* 0 default no prev *)
+		 val out2 = day7(mk_tape (), b , out1) ;
+		 val out3 = day7(mk_tape (), c , out2) ;
+		 val out4 = day7(mk_tape (), d , out3) ;
+		 val out5 = day7(mk_tape (), e , out4)
+	     in out5
+	     end)(1,0,4,3,2)
+		 		 
+
+
+(* will be 120 perms of 0 1 2 3 4 inclusive , no 5 *)
+
+(*
+painful - trying to make permutations 
+
+fun perms () = 
+    let val count = ref 1 
+	fun permute (xs , acc) = 
+    case xs of 
+	[] => (print "permutation " ; print (Int.toString (!count)) ;
+              printList (Int.toString) acc ; print "\n" ; 
+	      count := (!count) + 1 ; () ) 
+     | (h::t) => (permute (t, (h :: acc)) ;
+		  permute (t @ [h] , acc ))
+    in 
+	permute ([0,1,2,3,4], [])  
+    end
+*)
+
+
+(* lot time wasted on curried / non curried functions  *)
+fun without (n : int)  (xs : int list) : int list = 
+    List.filter (fn m => not (n = m)) xs
+
+
+(* choice 0 1 2 3 4 *)
+fun perms () = 
+  let val count = ref 1 
+      fun perm xs ys =  
+      case xs of 
+       [] => (print "permutation : " ; print (Int.toString (!count)) ; 
+              print " : " ;
+	      printList (Int.toString) ys ; 
+	      count := (!count) + 1 )
+       | _ => let 
+	      in List.map (fn n => perm (without n xs) (n :: ys)) xs ; () 
+	      end
+  in perm [0,1,2,3,4] []
+  end
+
+
+(* *)    
+fun day7perms (tape_list) = 
+  let val count : int ref = ref 1 ;
+      val highest : int ref = ref 0 ; 
+      val highest_list : int list ref= ref [] ; 
+      fun trial vars = 
+	  case vars of 
+	      [a,b,c,d,e] => 
+		let fun mk_tape () =
+		     A.fromList tape_list;
+		 val out1 = day7(mk_tape (), a , 0) ; (* 0 default no prev *)
+		 val out2 = day7(mk_tape (), b , out1) ;
+		 val out3 = day7(mk_tape (), c , out2) ;
+		 val out4 = day7(mk_tape (), d , out3) ;
+		 val out5 = day7(mk_tape (), e , out4)
+		in out5
+		end  ;
+      fun record (ys) = let val out = trial ys 
+			in if out > (!highest) then 
+			       (highest := out ;
+				highest_list := ys ; ())
+			   else ()
+			end ;
+      fun perm xs ys =  
+      case xs of 
+       [] => (print "permutation : " ; print (Int.toString (!count)) ; 
+              print " : " ;
+	      printList (Int.toString) ys ; (* ys is the goods  *)
+	      record ys ;
+	      count := (!count) + 1 )
+       | _ => let 
+	      in List.map (fn n => perm (without n xs) (n :: ys)) xs ; () 
+	      end 
+  in perm [0,1,2,3,4] [] ; 
+     (!highest, !highest_list)
+  end
+
+val trial1b = day7perms [3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0]
+val trial2b = day7perms [3,23,3,24,1002,24,10,24,1002,23,~1,23,101,5,23,23,1,24,23,23,4,23,99,0,0]
+val trial3b = day7perms [3,31,3,32,1002,32,10,32,1001,31,~2,31,1007,31,0,33,1002,33,7,33,1,33,31,31,1,32,31,31,4,31,99,0,0,0]
+
+val day7part1 = day7perms day7list
+
+(* 
+> use "fun.sml" 
+val day7part1 = (67023, [2, 3, 1, 0, 4]): int * int list
+*)
+
+
+
