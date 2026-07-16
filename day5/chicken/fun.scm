@@ -171,20 +171,34 @@ execute an add - we read in values
        (else (error "unknown tape format type"))))))
 
 
+(define (op-to-string op)
+  (cond
+   ((= op 1) "add")
+   ((= op 2) "multiply")
+   ((= op 3) "read")
+   ((= op 4) "write")
+   ((= op 5) "jump-if-true")
+   ((= op 6) "jump-if-false")
+   ((= op 7) "less-than")
+   ((= op 8) "equals")
+   ((= op 99) "halt")   
+   (else (format #f "unknown-~a" op))))
+
+
 (define interpret-tape
   (lambda (tape ip reader writer)
     (let ((op (param-op (vector-ref tape ip))))
-      (format #t "interpret-tape (ip)~a : (op)~a ~%" ip op)
+      (format #t "interpret-tape (ip)~a : (op)~a:~a ~%" ip op (op-to-string op))
       (cond
        ((= op 1) (interpret-add tape ip reader writer))
        ((= op 2) (interpret-multiply tape ip reader writer))
        ((= op 3) (interpret-reader tape ip reader writer))
        ((= op 4) (interpret-writer tape ip reader writer))
 
-       ((= op 5) (interpret-jump-if-true tape ip reader writer)) ;;todo
-       ((= op 6) (interpret-jump-if-false tape ip reader writer));;todo
-       ((= op 7) (interpret-less-than tape ip reader writer));;todo
-       ((= op 8) (interpret-equals tape ip reader writer));;todo
+       ((= op 5) (interpret-jump-if-true tape ip reader writer)) 
+       ((= op 6) (interpret-jump-if-false tape ip reader writer))
+       ((= op 7) (interpret-less-than tape ip reader writer))
+       ((= op 8) (interpret-equals tape ip reader writer))
        
        ((= op 99) (interpret-halt tape ip reader writer))
        (else (interpret-error tape ip reader writer))))))
@@ -194,10 +208,10 @@ execute an add - we read in values
   (lambda (tape ip reader writer)
     (let* ((arg1 (vector-ref tape (+ ip 1)))
 	   (arg2 (vector-ref tape (+ ip 2)))
-	   (p1 (param-1 (vector-ref tape ip))) 
-	   ;; p2 not required as its writing	  
+	   (p1 (param-1 (vector-ref tape ip)))
+	   (p2 (param-2 (vector-ref tape ip)))	   
 	   (v1 (if (zero? p1) (vector-ref tape arg1) arg1))
-	   (v2 arg2)
+	   (v2 (if (zero? p2) (vector-ref tape arg2) arg2))
 	   )
       (cond
        ((not (zero? v1))
@@ -213,9 +227,9 @@ execute an add - we read in values
     (let* ((arg1 (vector-ref tape (+ ip 1)))
 	   (arg2 (vector-ref tape (+ ip 2)))
 	   (p1 (param-1 (vector-ref tape ip))) 
-	   ;; p2 not required as its writing	  
+	   (p2 (param-2 (vector-ref tape ip))) 
 	   (v1 (if (zero? p1) (vector-ref tape arg1) arg1))
-	   (v2 arg2)
+	   (v2 (if (zero? p2) (vector-ref tape arg2) arg2))
 	   )
       (cond
        ((zero? v1)
@@ -240,7 +254,30 @@ execute an add - we read in values
 	   )
       ;; condition
       (cond
-       ((< v1 v2) (vector-set! tape v3 1))
+       ((< v1 v2)
+	(format #t "comparing ~a < ~a ~%" v1 v2)
+	(vector-set! tape v3 1))
+       (else (vector-set! tape v3 0)))
+      ;; next
+      (interpret-tape tape (+ ip 4) reader writer))))
+
+
+
+(define interpret-equals
+  (lambda (tape ip reader writer)
+    (let* ((arg1 (vector-ref tape (+ ip 1)))
+	   (arg2 (vector-ref tape (+ ip 2)))
+	   (arg3 (vector-ref tape (+ ip 3)))
+	   (p1 (param-1 (vector-ref tape ip)))
+	   (p2 (param-2 (vector-ref tape ip)))
+	   ;; p3 not required as its writing	  
+	   (v1 (if (zero? p1) (vector-ref tape arg1) arg1))
+	   (v2 (if (zero? p2) (vector-ref tape arg2) arg2))
+	   (v3 arg3)
+	   )
+      ;; condition
+      (cond
+       ((= v1 v2) (vector-set! tape v3 1))
        (else (vector-set! tape v3 0)))
       ;; next
       (interpret-tape tape (+ ip 4) reader writer))))
@@ -283,10 +320,13 @@ execute an add - we read in values
 ;; no param modes since writing only
 (define interpret-reader
   (lambda (tape ip reader writer)
-    (let* ((arg1 (vector-ref tape (+ ip 1)))	 
-	   (v1 arg1)
+    (let* ((arg1 (vector-ref tape (+ ip 1)))
+	   (p1 (param-1 (vector-ref tape ip)))
+	   (v1 arg1) ;;(if (zero? p1) (vector-ref tape arg1) arg1))
+	   (in (reader 'get))
 	   )
-	(vector-set! tape arg1 (reader 'get))
+      (format #t "read in ~a ~%" in)
+	(vector-set! tape v1 in)
 	(interpret-tape tape (+ ip 2) reader writer))))
 
 ;; where does writing go to ?
@@ -338,7 +378,177 @@ execute an add - we read in values
        (cond
 	((< noun 99) (loop-noun (+ noun 1))))))))
 
-;; has reader and writer now
+
+;; reads in a value and writes out same value
+(define (ex201)  
+  (letrec ((reader (lambda (sym)
+		     (cond
+		      ((eq? sym 'get) 123)
+		      (else (error "reader error ")))))
+	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
+	   (ip 0))
+    (interpret-tape (list->vector '(3 0 4 0 99)) ip reader writer)))
+
+;; multiplies 3 by 33 and puts it into position 4 
+(define (ex202)  
+  (letrec ((reader (lambda (sym)
+		     (cond
+		      ((eq? sym 'get) 123)
+		      (else (error "reader error ")))))
+	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
+	   (ip 0))
+    (interpret-tape (list->vector '(1002 4 3 4 33)) ip reader writer)))
+
+;; 
+(define (ex203)  
+  (letrec ((reader (lambda (sym)
+		     (cond
+		      ((eq? sym 'get) 123)
+		      (else (error "reader error ")))))
+	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
+	   (ip 0))
+    (interpret-tape (list->vector '(1101 100 -1 4 0)) ip reader writer)))
+
+
+
+;; (3 9 8 9 10 9 4 9 99 -1 8) - Using position mode
+;; consider whether the input is equal to 8; output 1 (if it is) or 0 (if it is not).
+(define (ex204)  
+  (letrec ((reader (lambda (sym)
+		     (cond
+		      ((eq? sym 'get) 8)
+		      (else (error "reader error ")))))
+	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
+	   (ip 0))
+    (interpret-tape (list->vector '(3 9 8 9 10 9 4 9 99 -1 8)) ip reader writer)))
+
+(define (ex205)  
+  (letrec ((reader (lambda (sym)
+		     (cond
+		      ((eq? sym 'get) 7)
+		      (else (error "reader error ")))))
+	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
+	   (ip 0))
+    (interpret-tape (list->vector '(3 9 8 9 10 9 4 9 99 -1 8)) ip reader writer)))
+
+
+
+;; - Using position mode, consider whether the input is less than 8; output 1 (if it is) or 0 (if it is not).
+;; ;; (3 9 7 9 10 9 4 9 99 -1 8) - Using position mode  consider whether the input is less than 8; output 1 (if it is) or 0 (if it is not).
+(define (ex206)  
+  (letrec ((reader (lambda (sym)
+		     (cond
+		      ((eq? sym 'get) 5)
+		      (else (error "reader error ")))))
+	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
+	   (ip 0))
+    (interpret-tape (list->vector '(3 9 7 9 10 9 4 9 99 -1 8)) ip reader writer)))
+
+(define (ex207)  
+  (letrec ((reader (lambda (sym)
+		     (cond
+		      ((eq? sym 'get) 8))))
+	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
+	   (ip 0))
+    (interpret-tape (list->vector '(3 9 7 9 10 9 4 9 99 -1 8)) ip reader writer)))
+
+
+
+;; - Using immediate mode, consider whether the input is equal to 8; output 1 (if it is) or 0 (if it is not).
+(define (ex208)  
+  (letrec ((reader (lambda (sym)
+		     (cond
+		      ((eq? sym 'get) 5)
+		      (else (error "reader error ")))))
+	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
+	   (ip 0))
+    (interpret-tape (list->vector '(3 3 1108 -1 8 3 4 3 99)) ip reader writer)))
+
+(define (ex209)  
+  (letrec ((reader (lambda (sym)
+		     (cond
+		      ((eq? sym 'get) 8))))
+	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
+	   (ip 0))
+    (interpret-tape (list->vector '(3 3 1108 -1 8 3 4 3 99)) ip reader writer)))
+
+
+
+;; (3 3 1107 -1 8 3 4 3 99)
+;; - Using immediate mode, consider whether the input is less than 8; output 1 (if it is) or 0 (if it is not).
+(define (ex210)  
+  (letrec ((reader (lambda (sym)
+		     (cond
+		      ((eq? sym 'get) 5)
+		      (else (error "reader error ")))))
+	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
+	   (ip 0))
+    (interpret-tape (list->vector '(3 3 1107 -1 8 3 4 3 99)) ip reader writer)))
+
+(define (ex211)  
+  (letrec ((reader (lambda (sym)
+		     (cond
+		      ((eq? sym 'get) 8))))
+	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
+	   (ip 0))
+    (interpret-tape (list->vector '(3 3 1107 -1 8 3 4 3 99)) ip reader writer)))
+
+;; Here are some jump tests that take an input, then output 0 if the input was zero or 1 if the input was non-zero:
+;; (3 12 6 12 15 1 13 14 13 4 13 99 -1 0 1 9) (using position mode)
+
+(define (ex212)  
+  (letrec ((reader (lambda (sym)
+		     (cond
+		      ((eq? sym 'get) 0)
+		      (else (error "reader error ")))))
+	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
+	   (ip 0))
+    (interpret-tape (list->vector '(3 12 6 12 15 1 13 14 13 4 13 99 -1 0 1 9)) ip reader writer)))
+
+(define (ex213)  
+  (letrec ((reader (lambda (sym)
+		     (cond
+		      ((eq? sym 'get) 1))))
+	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
+	   (ip 0))
+    (interpret-tape (list->vector '(3 12 6 12 15 1 13 14 13 4 13 99 -1 0 1 9)) ip reader writer)))
+
+
+;; Here are some jump tests that take an input, then output 0 if the input was zero or 1 if the input was non-zero:
+;; 3,3,1105,-1,9,1101,0,0,12,4,12,99,1 (using immediate mode)
+
+
+(define (ex214)  
+  (letrec ((reader (lambda (sym)
+		     (cond
+		      ((eq? sym 'get) 0)
+		      (else (error "reader error ")))))
+	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
+	   (ip 0))
+    (interpret-tape (list->vector '(3 3 1105 -1 9 1101 0 0 12 4 12 99 1)) ip reader writer)))
+
+(define (ex215)  
+  (letrec ((reader (lambda (sym)
+		     (cond
+		      ((eq? sym 'get) 1))))
+	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
+	   (ip 0))
+    (interpret-tape (list->vector '(3 3 1105 -1 9 1101 0 0 12 4 12 99 1)) ip reader writer)))
+
+
+;; Here's a larger example:
+;; 3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,
+;; 1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,
+;; 999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99
+;; The above example program uses an input instruction to ask for a single number. The program will then output 999 if the input value is below 8, output 1000 if the input value is equal to 8, or output 1001 if the input value is greater than 8.
+
+;; generalized testing 
+;;  for a given tape - guarantee fresh - each run (list->vector xs) for fresh vector
+;;  sequence of (in -> out) (in -> out) (in -> out)
+;;  in is value that reader always produces , out is value writer produces as result running
+
+
+
 
 (define (day5part1) (interpret day5input))
 		 
@@ -349,30 +559,3 @@ execute an add - we read in values
 	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
 	   (ip 0))
     (interpret-tape (list->vector day5input) ip reader writer)))
-
-;; reads in a value and writes out same value
-(define (ex201)  
-  (letrec ((reader (lambda (sym)
-		     (cond
-		      ((eq? sym 'get) 123))))
-	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
-	   (ip 0))
-    (interpret-tape (list->vector '(3 0 4 0 99)) ip reader writer)))
-
-;; multiplies 3 by 33 and puts it into position 4 
-(define (ex202)  
-  (letrec ((reader (lambda (sym)
-		     (cond
-		      ((eq? sym 'get) 123))))
-	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
-	   (ip 0))
-    (interpret-tape (list->vector '(1002 4 3 4 33)) ip reader writer)))
-
-
-(define (ex203)  
-  (letrec ((reader (lambda (sym)
-		     (cond
-		      ((eq? sym 'get) 123))))
-	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
-	   (ip 0))
-    (interpret-tape (list->vector '(1101 100 -1 4 0)) ip reader writer)))
