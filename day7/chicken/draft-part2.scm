@@ -1,5 +1,34 @@
 ;; -*- geiser-scheme-implementation: chicken -*-
 
+#|
+
+machine interprets can run until either it needs a read - of which is not a phase
+- it has already read once - the phase is used up
+- it has to wait on
+
+ machine a : phase-a input(1)=0 input(n)= from machine e
+
+if we give each machine an ident
+machine-a has ident 0
+machine-b has ident 1
+and so on
+
+we can have idea of mailboxes
+
+0   1          2    3     4      5
+#f  a-number   #f   #f    #f     #f
+
+so we can see if
+each machine can continue processing until such time as the slot it will write to
+already has a number
+machine e with ident 5 here is the last machine
+
+
+|#
+
+  
+
+
 (import (chicken format))
 (import (chicken process-context)) ;; change-directory current-directory
 (import procedural-macros)
@@ -13,11 +42,13 @@
 (import bindings) ;; (bind (a b c) '(1 2 3) ...
 (define *verbose* (make-parameter #t))
 
+
+;; we can use the function as a pure procedure jump
+;;        (lambda (tape ip reader writer ident)
 (define-syntax interpret-binary-operation
   (syntax-rules ()
     ((_ name op)
-     (define name
-       (lambda (tape ip reader writer)
+     (define (name)
 	 (let* ((arg1 (vector-ref tape (+ ip 1)))
 		(arg2 (vector-ref tape (+ ip 2)))
 		(arg3 (vector-ref tape (+ ip 3)))
@@ -29,13 +60,12 @@
 		(v3 arg3)
 		)
 	   (vector-set! tape v3 (op v1 v2))
-	   (interpret-tape tape (+ ip 4) reader writer)))))))
+	   (set! ip (+ ip 4)))))))
 
 (define-syntax interpret-conditional-binary-operation
   (syntax-rules ()
     ((_ name op)
-     (define name
-       (lambda (tape ip reader writer)
+     (define (name)
 	 (let* ((arg1 (vector-ref tape (+ ip 1)))
 		(arg2 (vector-ref tape (+ ip 2)))
 		(arg3 (vector-ref tape (+ ip 3)))
@@ -51,13 +81,15 @@
 	    ((op v1 v2) (vector-set! tape v3 1))
 	    (else (vector-set! tape v3 0)))
 	   ;; next
-	   (interpret-tape tape (+ ip 4) reader writer)))))))
+	   (set! ip (+ ip 4)))))))
+
+
 
 (define-syntax interpret-conditional-jump
   (syntax-rules ()
     ((_ name op)
      (define name
-       (lambda (tape ip reader writer)
+       (lambda (tape ip reader writer ident)
 	 (let* ((arg1 (vector-ref tape (+ ip 1)))
 		(arg2 (vector-ref tape (+ ip 2)))
 		(p1 (param-1 (vector-ref tape ip)))
@@ -68,10 +100,10 @@
 	   (cond
 	    ((op v1)
 	    ;; set ip to 2nd parameter
-	     (interpret-tape tape v2 reader writer))
+	     (interpret-tape tape v2 reader writer ident))
 	    (else
 	     ;; skip over
-	     (interpret-tape tape (+ ip 3) reader writer)))))))))
+	     (interpret-tape tape (+ ip 3) reader writer ident)))))))))
 
 
 (define day2input '(1 0 0 3 1 1 2 3 1 3 4 3 1 5 0 3 2 13 1 19 1 19 10 23 2 10 23 27 1 27 6 31 1 13 31 35 1 13 35 39 1 39 10 43 2 43 13 47 1 47 9 51 2 51 13 55 1 5 55 59 2 59 9 63 1 13 63 67 2 13 67 71 1 71 5 75 2 75 13 79 1 79 6 83 1 83 5 87 2 87 6 91 1 5 91 95 1 95 13 99 2 99 6 103 1 5 103 107 1 107 9 111 2 6 111 115 1 5 115 119 1 119 2 123 1 6 123 0 99 2 14 0 0))
@@ -117,8 +149,8 @@
 		       #f
 		       )))
       (cond
-       ((list? tape) (interpret-tape (list->vector tape) 0 reader writer))
-       ((vector? tape) (interpret-tape tape 0 reader writer))
+       ((list? tape) (interpret-tape (list->vector tape) 0 reader writer ident))
+       ((vector? tape) (interpret-tape tape 0 reader writer ident))
        (else (error "unknown tape format type"))))))
 
 (define (op-to-string op)
@@ -135,23 +167,23 @@
    (else (format #f "unknown-~a" op))))
 
 (define interpret-tape
-  (lambda (tape ip reader writer)
+  (lambda (tape ip reader writer ident)
     (let ((op (param-op (vector-ref tape ip))))
       (when (*verbose*)
 	(format #t "interpret-tape (ip)~a : (op)~a:~a ~%" ip op (op-to-string op)))
       (cond
-       ((= op 1) (interpret-add tape ip reader writer))
-       ((= op 2) (interpret-multiply tape ip reader writer))
-       ((= op 3) (interpret-reader tape ip reader writer))
-       ((= op 4) (interpret-writer tape ip reader writer))
+       ((= op 1) (interpret-add tape ip reader writer ident))
+       ((= op 2) (interpret-multiply tape ip reader writer ident))
+       ((= op 3) (interpret-reader tape ip reader writer ident))
+       ((= op 4) (interpret-writer tape ip reader writer ident))
 
-       ((= op 5) (interpret-jump-if-true tape ip reader writer)) 
-       ((= op 6) (interpret-jump-if-false tape ip reader writer))
-       ((= op 7) (interpret-less-than tape ip reader writer))
-       ((= op 8) (interpret-equals tape ip reader writer))
+       ((= op 5) (interpret-jump-if-true tape ip reader writer ident)) 
+       ((= op 6) (interpret-jump-if-false tape ip reader writer ident))
+       ((= op 7) (interpret-less-than tape ip reader writer ident))
+       ((= op 8) (interpret-equals tape ip reader writer ident))
        
-       ((= op 99) (interpret-halt tape ip reader writer))
-       (else (interpret-error tape ip reader writer))))))
+       ((= op 99) (interpret-halt tape ip reader writer ident))
+       (else (interpret-error tape ip reader writer ident))))))
 
 (interpret-conditional-jump interpret-jump-if-true (lambda (v) (not (zero? v))))
 (interpret-conditional-jump interpret-jump-if-false zero?)
@@ -163,7 +195,7 @@
 
 ;; no param modes since writing only
 (define interpret-reader
-  (lambda (tape ip reader writer)
+  (lambda (tape ip reader writer ident)
     (let* ((arg1 (vector-ref tape (+ ip 1)))
 	   (p1 (param-1 (vector-ref tape ip)))
 	   (v1 arg1) 
@@ -172,19 +204,19 @@
       (when (*verbose*)
 	(format #t "read in ~a ~%" in))      
 	(vector-set! tape v1 in)
-	(interpret-tape tape (+ ip 2) reader writer))))
+	(interpret-tape tape (+ ip 2) reader writer ident))))
 
 ;; where does writing go to ?
 (define interpret-writer
-  (lambda (tape ip reader writer)
+  (lambda (tape ip reader writer ident)
     (let* ((arg1 (vector-ref tape (+ ip 1)))
 	   (p1 (param-1 (vector-ref tape ip)))
 	   (v1 (if (zero? p1) (vector-ref tape arg1) arg1)))
 	(writer v1)
-	(interpret-tape tape (+ ip 2) reader writer))))
+	(interpret-tape tape (+ ip 2) reader writer ident))))
 
 (define interpret-halt
-  (lambda (tape ip reader writer)
+  (lambda (tape ip reader writer ident)
     tape))
 
 
@@ -235,7 +267,7 @@
 		      (else (error "reader error ")))))
 	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
 	   (ip 0))
-    (interpret-tape (list->vector '(3 0 4 0 99)) ip reader writer)))
+    (interpret-tape (list->vector '(3 0 4 0 99)) ip reader writer ident)))
 
 ;; multiplies 3 by 33 and puts it into position 4 
 (define (ex202)  
@@ -245,7 +277,7 @@
 		      (else (error "reader error ")))))
 	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
 	   (ip 0))
-    (interpret-tape (list->vector '(1002 4 3 4 33)) ip reader writer)))
+    (interpret-tape (list->vector '(1002 4 3 4 33)) ip reader writer ident)))
 
 ;; 
 (define (ex203)  
@@ -255,7 +287,7 @@
 		      (else (error "reader error ")))))
 	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
 	   (ip 0))
-    (interpret-tape (list->vector '(1101 100 -1 4 0)) ip reader writer)))
+    (interpret-tape (list->vector '(1101 100 -1 4 0)) ip reader writer ident)))
 
 ;; ==============================================================================
 
@@ -273,7 +305,7 @@
 		  (writer (lambda (w) (set! out w))))
 	   ;; *verbose* keeps interpret quiet so we can see results of test
 	   (parameterize ((*verbose* #f))
-	     (interpret-tape (list->vector tape) ip reader writer))
+	     (interpret-tape (list->vector tape) ip reader writer ident))
 	   out))))))
 
 
@@ -330,7 +362,7 @@
 		      ((eq? sym 'get) 5))))
 	   (writer (lambda (w) (format #t "wrote ~a ~%" w)))
 	   (ip 0))
-    (interpret-tape (list->vector day5input) ip reader writer)))
+    (interpret-tape (list->vector day5input) ip reader writer ident)))
 
 
 
@@ -390,7 +422,7 @@
 		  (writer (lambda (w) (set! out w))))
 	   ;; *verbose* keeps interpret quiet so we can see results of test
 	   (parameterize ((*verbose* #f))
-	     (interpret-tape (list->vector tape) ip reader writer))
+	     (interpret-tape (list->vector tape) ip reader writer ident))
 	   out))))))
 
 	     
@@ -440,7 +472,7 @@
 
 (define-syntax make-amplifier-with-writer
   (syntax-rules ()
-    ((_ tape phase-a input-a input-b writer)
+    ((_ tape phase-a input-a input-b writer ident)
      (set! input-b
        (let ((out #f)
 	     (ip 0))
@@ -456,7 +488,7 @@
 		  )
 	   ;; *verbose* keeps interpret quiet so we can see results of test
 	   (parameterize ((*verbose* #f))
-	     (interpret-tape (list->vector tape) ip reader writer))
+	     (interpret-tape (list->vector tape) ip reader writer ident))
 	   out))))))
 
 
