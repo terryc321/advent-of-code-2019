@@ -65,6 +65,24 @@
     (test "E test with description5" 999 (/ 1 0))
     (test-end "fooE2"))'done)
 
+;; miss out on documentation opportunity if we use anonymous functions
+(define mytest1
+  (lambda ()
+    "test title expected-result the-computation"
+    (test "a random test" 3 (/ 4 0))))
+
+;; Calculates the factorial of a non-negative integer.
+;;
+;; Arguments:
+;;   n - The number to calculate the factorial for.
+;; Returns:
+;;   The factorial of n.
+(define (mytest2)
+  ;; this is inside mytest2
+  "doc title for mytest2 - put something pithy here"
+  (test "another random test" 5 (error "foo hit my head")))
+
+mytest2
 
 ;;(test-exit) ;; (test-exit kills 
 
