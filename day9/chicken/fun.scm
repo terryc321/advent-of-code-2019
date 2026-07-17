@@ -33,7 +33,7 @@ its out of normal size tape
 ;; mktape creates a hash table memory
 (define (mktape xs)
   (assert (list? xs))
-  (let ((hash (make-hash-table)))
+  (let ((hash (make-hash-table test: = )))
     (letrec ((iter (lambda (xs i)
 		     (cond
 		      ((null? xs) #t)
@@ -175,6 +175,7 @@ its out of normal size tape
    (else (format #f "unknown-~a" op))))
 
 
+
 #|
 machine 
 |#
@@ -215,7 +216,7 @@ machine
 	    (set! in (vector-ref *phase-table* ident))
 	    (let* ((arg1 (tape-lookup tape (+ ip 1)))
 		   (p1 (param-1 (tape-lookup tape ip)))
-		   (v1 arg1))		   
+		   (v1 (%param tape p1 arg1 *relative-base*))) ;;arg1))		   
 	      (set! status 'working)
 	      (tape-write! tape v1 in)
 	      (set! ip (+ ip 2))))
@@ -223,7 +224,7 @@ machine
 	   (else ;; assume its a number
 	    (let* ((arg1 (tape-lookup tape (+ ip 1)))
 		   (p1 (param-1 (tape-lookup tape ip)))
-		   (v1 arg1)
+		   (v1 (%param tape p1 arg1 *relative-base*)) ;;arg1)
 		   (in (vector-ref *mailbox-table* ident)))
 	      (set! status 'working)
 	      ;; reset inbox to empty as taken a value
@@ -370,7 +371,7 @@ machine
   
 
 (define (day9part1)
-  (let ((phase 1))
     (parameterize ((*verbose* #t))	   
-      (run phase day9input))))
+      (run phase: 1
+	   tapelist: day9input)))
 
