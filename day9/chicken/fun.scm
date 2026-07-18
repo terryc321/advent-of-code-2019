@@ -284,30 +284,27 @@ machine
       (cond
        ((equal? cmd 'ip) ip)
        ((equal? cmd 'step) (i_step))
+       ((equal? cmd 'tape) tape)
        ((equal? cmd 'halted?) halted)
        ((equal? cmd 'relbase) *relative-base*)
        ((equal? cmd 'status) status)))))
 
 
 
-;; 
-(define (run #!key (phase 0) (tapelist '()) (relbase 0))
+;; removed phases entirely
+(define (run #!key (input 0) (tapelist '()) (relbase 0))
   (define (all-halted?) (vector-ref *halt-table* 0))
   (define *output* '())
-  
-  (define (try phases)
+  (define machine-a #f)
+  (define (try)
     ;;
     (set! *thrusters* 0) 
     (set! *halt-table* (make-vector 5 #f))
-    ;;(set! *phase-table* (make-vector 5 #f))
 
-    ;; using named args pass through 
-    (define machine-a (make-machine ident: 0 tapelist: tapelist relbase: relbase))
-    ;; set phases - only one phase ?
-    ;;(bind (phase-a) phases  (vector-set! *phase-table* 0 phase-a))
-    ;;(vector-set! *phase-table* 0 phase)
+    (set! machine-a (make-machine ident: 0 tapelist: tapelist relbase: relbase))
     ;; set first value in mailbox to zero (0)
-    (vector-set! *mailbox-table* 0 phase)
+    (vector-set! *mailbox-table* 0 input)
+    (vector-set! *mailbox-table* 1 #f)
     ;;
     (let loop ()
       (machine-a 'step)
@@ -329,16 +326,18 @@ machine
 	(format #t "ip = ~a~%" (machine-a 'ip))
 	)
        (else (loop)))))
-  (try (list phase))
-  (cons (reverse *output*)
-	machine-a))
+  (try)
+  (values (reverse *output*)
+	  machine-a	  
+	  ))
+;;(cons (reverse *output*) machine-a))
 
 
 
 
 (define (ex1)
     (parameterize ((*verbose* #f))	   
-      (run phase: 0
+      (run 
 	   tapelist: '(109 1 204 -1 1001 100 1 100 1008 100 16 101 1006 101 0 99))))
 
 
@@ -397,19 +396,35 @@ machine
 	       (first out)))))))
 
 ;;(run phase: 8 tapelist: '(3 9 8 9 10 9 4 9 99 -1 8))
+(call-with-values (lambda () (values 1 2 3))
+		  (lambda (a b c) (list a b)))
+
+;; need to convert machine tape (or memory of machine as hashtable) to a list
+(define (machine-tape->list ht)
+  (assert (hash-table? ht))
+  ;; (format #t "hash table size =~a~%" (hash-table-size ht))
+  ;; (hash-table-walk ht
+  ;; 		   (lambda (k v)
+  ;; 		     (format #t "key = ~a : val = ~a ~%" k v)))
+  (let ((out '()))
+    (let loop ((i (+ -1 (hash-table-size ht))))
+      (set! out (cons (hash-table-ref ht i) out))
+      ;; (format #t "out => ~a~%" out)
+      (when (> i 0) (loop (- i 1)))
+      out)))
+
 
 (define (day2test)
-  (test-begin "day2")
-  
+  (test-begin "day2")  
     (test "day2ex1"  '(3500 9 10 70 2 3 11 0 99 30 40 50)
 	  (let ((tape '(1 9 10 3 2 3 11 0 99 30 40 50)))
 	    (parameterize ((*verbose* #f))
-	      (bind (out . machine) (run tapelist: tape)
-		    (format #t "output => ~a ~%" out)
-	      
-	      ))))
-    
-
+	      (call-with-values (lambda () (run input: 0 tapelist: tape))
+		(lambda (out machine)
+		  (format #t "out => ~a~%" out)
+		  (format #t "machine => ~a~%" machine)
+		  (machine-tape->list (machine 'tape))
+		  )))))
   (test-end "day2"))
 
 
