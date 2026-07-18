@@ -72,7 +72,7 @@
 
 ;;
 (define (ex1-helper n)  
-  (let ((pf (make-patt-fn '(1 2 3 4 6 7 8) 1)))
+  (let ((pf (make-patt-fn '(1 2 3 4 5 6 7 8) 1)))
     (let* ((bf (make-base-fn '(0 1 0 -1) n)))
       (pf 'reset)
       (bf 'next) ;; we discard first base value
@@ -83,21 +83,69 @@
 			  (b (bf 'next)))
 		      (cond
 		       ((eq? p 'done)
-			(format #t "sum is ~a ~%" sum)
+			;;(format #t "sum is ~a ~%" sum)
 			(modulo (abs sum) 10))
 		       (#t (let ((mul (* p b)))
 			     (set! sum (+ sum mul))
-			     (format #t "~a * ~a => ~a : ~a~%" p b (* p b) sum)
+			     ;;(format #t "~a * ~a => ~a : ~a~%" p b (* p b) sum)
 			     (exhaust))))))))
-	  (exhaust)
-	  )))))
+	    ;;(format #t "==============~%")
+  	    (exhaust))))))
 
 (define (ex1)
-  (ex1-helper 1)
-  (format #t "==============~%")
-  (ex1-helper 2))
+  (let ((res '()))
+    (format #t "~%answer =>~%")
+    (let loop ((i 1))
+      (let ((v (ex1-helper i)))
+	(format #t "~a" v)
+	(cond
+	 ((< i 8) (loop (+ i 1))))))
+    (format #t "~%")))
+
+;; ==========================================================
+
+(define (bigex1-helper patt ex n)  
+  (let ((pf (make-patt-fn patt ex)))
+    (let* ((bf (make-base-fn '(0 1 0 -1) n)))
+      (pf 'reset)
+      (bf 'next) ;; we discard first base value
+      (let ((sum 0))
+	(letrec ((exhaust
+		  (lambda ()
+		    (let ((p (pf 'next))
+			  (b (bf 'next)))
+		      (cond
+		       ((eq? p 'done)
+			;;(format #t "sum is ~a ~%" sum)
+			(modulo (abs sum) 10))
+		       (#t (let ((mul (* p b)))
+			     (set! sum (+ sum mul))
+			     ;;(format #t "~a * ~a => ~a : ~a~%" p b (* p b) sum)
+			     (exhaust))))))))
+	    ;;(format #t "==============~%")
+  	    (exhaust))))))
+
+(define (bigex1)
+  (let* ((res '())
+	 (ex 10000) ;;10000) ;; ten-thousand times
+	 (patt '(1 2 3 4 5 6 7 8));;(explode (pattern-input)))
+	 (plim (* ex (length patt))))
+    (format #t "~%answer =>~%")
+    (let loop ((i 1))
+      (let ((v (bigex1-helper patt ex i)))
+	(format #t "~a" v)
+	(cond
+	 ((< i plim) (loop (+ i 1))))))
+    (format #t "~%")))
+
+(bigex1)
+
+
 
 #|
+
+  (ex1-helper 1)
+  (ex1-helper 2))
 
 
 
