@@ -7,6 +7,7 @@ now int code uses arbitrarily large numbers and arbitrarily large memory
 if we have a hash table for memory we can instead of vector-ref just return 0 if
 its out of normal size tape
 
+removed phase table - phases no longer a thing
 
 
 |#
@@ -206,25 +207,25 @@ machine
     
     ;; reading phase will always succeed - its there at outset (hopefully..)
     ;;
+    ;; (cond
+    ;; 	   ((< reads 1)
+    ;; 	    (set! reads (+ 1 reads))
+    ;; 	    (set! in (vector-ref *phase-table* ident))
+    ;; 	    (let* ((arg1 (tape-lookup tape (+ ip 1)))
+    ;; 		   (p1 (param-1 (tape-lookup tape ip)))
+    ;; 		   (v1 (%param tape p1 arg1 *relative-base*))) ;; arg1 
+    ;; 	      (tape-write! tape v1 in)
+    ;; 	      (set! ip (+ ip 2))))
+    ;; 	   ((equal? #f (vector-ref *mailbox-table* ident)) (set! status 'block-read))
+    ;; 	   (else ;; assume its a number
+	    
     ;; more complex local state - first read comes from phase table 
     (define i_read 
       (let ((reads 0))
 	(lambda ()
-	  (cond
-	   ((< reads 1)
-	    (set! reads (+ 1 reads))
-	    (set! in (vector-ref *phase-table* ident))
-	    (let* ((arg1 (tape-lookup tape (+ ip 1)))
+	  (let* ((arg1 (tape-lookup tape (+ ip 1)))
 		   (p1 (param-1 (tape-lookup tape ip)))
-		   (v1 (%param tape p1 arg1 *relative-base*))) ;;arg1))		   
-	      (set! status 'working)
-	      (tape-write! tape v1 in)
-	      (set! ip (+ ip 2))))
-	   ((equal? #f (vector-ref *mailbox-table* ident)) (set! status 'block-read))
-	   (else ;; assume its a number
-	    (let* ((arg1 (tape-lookup tape (+ ip 1)))
-		   (p1 (param-1 (tape-lookup tape ip)))
-		   (v1 (%param tape p1 arg1 *relative-base*)) ;;arg1)
+		   (v1 arg1) ;;(%param tape p1 arg1 *relative-base*)) ;;arg1)
 		   (in (vector-ref *mailbox-table* ident)))
 	      (set! status 'working)
 	      ;; reset inbox to empty as taken a value
@@ -232,7 +233,7 @@ machine
 	      ;; change tape and continue 
 	      (when (*verbose*)  (format #t "read in ~a ~%" in))      
 	      (tape-write! tape v1 in)
-	      (set! ip (+ ip 2))))))))
+	      (set! ip (+ ip 2))))))
 
     ;;  0 1 2 3 4
     (define i_write 
@@ -298,13 +299,13 @@ machine
     ;;
     (set! *thrusters* 0) 
     (set! *halt-table* (make-vector 5 #f))
-    (set! *phase-table* (make-vector 5 #f))
+    ;;(set! *phase-table* (make-vector 5 #f))
 
     ;; using named args pass through 
     (define machine-a (make-machine ident: 0 tapelist: tapelist relbase: relbase))
     ;; set phases - only one phase ?
     ;;(bind (phase-a) phases  (vector-set! *phase-table* 0 phase-a))
-    (vector-set! *phase-table* 0 phase)
+    ;;(vector-set! *phase-table* 0 phase)
     ;; set first value in mailbox to zero (0)
     (vector-set! *mailbox-table* 0 phase)
     ;;
@@ -329,7 +330,9 @@ machine
 	)
        (else (loop)))))
   (try (list phase))
-  (reverse *output*))
+  (cons (reverse *output*)
+	machine-a))
+
 
 
 
@@ -350,7 +353,6 @@ machine
 	   tapelist: '(104 1125899906842624 99))))
 
 
-
 ;; named arguments 
 ;; optional named parameters ? begin with *relative-base* of 2000 instead
 ;; outputs whatever is at 1985 in memory
@@ -363,7 +365,94 @@ machine
 		       109 19 204 -34 99))))
 
 
-(define (mytest)  
+;; convert day5 tests - may also include day 7 tests 
+;; (define-syntax one-read-write-example
+;;   (syntax-rules ()
+;;     ((_ title in expect tape)
+;;      ;; put test at start and compute out value - if compute crashes it will be caught!
+;;      (test title expect 
+;;        (let ((out #f)
+;; 	     (ip 0))
+;; 	 (letrec ((reader (lambda (sym)
+;; 			    (cond
+;; 			     ((eq? sym 'get) in)
+;; 			     (else (error "reader error ")))))
+;; 		  (writer (lambda (w) (set! out w))))
+;; 	   ;; *verbose* keeps interpret quiet so we can see results of test
+;; 	   (parameterize ((*verbose* #f))
+;; 	     (interpret-tape (list->vector tape) ip reader writer))
+;; 	   out))))))
+
+
+;; this actually starts the test before machine has been started
+;; so captures any really bad exceptions and all
+(define-syntax one-read-write-example
+  (syntax-rules ()
+    ((_ title in expect tape)
+     (test title expect 
+	   (parameterize ((*verbose* #f))	   
+	     (let ((out (run phase: in ;; a single input 
+			     tapelist: tape)))
+	       (assert (= (length out) 1))
+	       (first out)))))))
+
+;;(run phase: 8 tapelist: '(3 9 8 9 10 9 4 9 99 -1 8))
+
+(define (day2test)
+  (test-begin "day2")
+  
+    (test "day2ex1"  '(3500 9 10 70 2 3 11 0 99 30 40 50)
+	  (let ((tape '(1 9 10 3 2 3 11 0 99 30 40 50)))
+	    (parameterize ((*verbose* #f))
+	      (bind (out . machine) (run tapelist: tape)
+		    (format #t "output => ~a ~%" out)
+	      
+	      ))))
+    
+
+  (test-end "day2"))
+
+
+(define (day5test)
+  (test-begin "day5")
+  (let ((tape '(3 9 8 9 10 9 4 9 99 -1 8)))       
+    (one-read-write-example "input equal to 8 : output 1 else 0" 8 1 tape)
+    (one-read-write-example "input equal to 8 : output 1 else 0" 7 0 tape))	 
+  (let ((tape '(3 9 7 9 10 9 4 9 99 -1 8)))	
+    (one-read-write-example "input less than 8 ? output 1 else 0 " 7 1 tape)
+    (one-read-write-example "input less than 8 ? output 1 else 0 " 8 0 tape)
+    )
+  (let ((tape '(3 3 1108 -1 8 3 4 3 99)))	
+    (one-read-write-example "immediate mode : equal to 8; output 1 else 0." 7 0 tape)
+    (one-read-write-example "immediate mode : equal to 8; output 1 else 0." 8 1 tape)
+    )  
+(let ((tape '(3 3 1107 -1 8 3 4 3 99 )))	
+    (one-read-write-example "immediate mode : less than 8; output 1 else 0 " 7 1 tape)
+    (one-read-write-example "immediate mode : less than 8; output 1 else 0 " 8 0 tape)
+    )
+(let ((tape '(3 12 6 12 15 1 13 14 13 4 13 99 -1 0 1 9)))	
+    (one-read-write-example "jump tests position mode - output 0 if input 0 else 1 nonzero " 0 0 tape)
+    (one-read-write-example "jump tests position mode - output 0 if input 0 else 1 nonzero " 1 1 tape)
+    )
+(let ((tape '(3 3 1105 -1 9 1101 0 0 12 4 12 99 1)))	
+    (one-read-write-example "jumptests immediate mode - output 0 if input 0 else 1 nonzero " 0 0 tape)
+    (one-read-write-example "jumptests immediate mode - output 0 if input 0 else 1 nonzero " 1 1 tape)
+    )
+;; Here's a larger example:
+;; 3 21 1008 21 8 20 1005 20 22 107 8 21 20 1006 20 31 1106 0 36 98 0 0 1002 21 125 20 4 20 1105 1 46 104 999 1105 1 46 1101 1000 1 20 4 20 1105 1 46 98 99
+;; The above example program uses an input instruction to ask for a single number. The program will then output 999 if the input value is below 8, output 1000 if the input value is equal to 8, or output 1001 if the input value is greater than 8.
+
+(let ((tape '(3 21 1008 21 8 20 1005 20 22 107 8 21 20 1006 20 31 1106 0 36 98 0 0 1002 21 125 20 4 20 1105 1 46 104 999 1105 1 46 1101 1000 1 20 4 20 1105 1 46 98 99)))	
+    (one-read-write-example "larger example : input less 8 output 999 " 7 999 tape)
+    (one-read-write-example "larger example : input equal 8 output 1000 " 8 1000 tape)
+    (one-read-write-example "larger example : input greater 8 output 1001 " 9 1001 tape)
+    )
+  (test-end "day5")
+  )
+
+;;(day5test)
+
+(define (day9test)  
   (test "ex1" '(109 1 204 -1 1001 100 1 100 1008 100 16 101 1006 101 0 99) (ex1))
   (test "ex2" '(1219070632396864) (ex2))
   (test "ex3" '(1125899906842624) (ex3)))
