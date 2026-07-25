@@ -180,6 +180,20 @@
   (run-for (input) 1000))
 ;; 9493
 
+;; can we over-ride default moon copy 
+(defun copy-moon (moon)
+  (let ((tmp (make-moon :name (moon-name moon)
+			:position (make-array 3)
+			:velocity (make-array 3))))
+    (setf (aref (moon-position tmp) 0) (px moon))
+    (setf (aref (moon-position tmp) 1) (py moon))
+    (setf (aref (moon-position tmp) 2) (pz moon))
+    (setf (aref (moon-velocity tmp) 0) (vx moon))
+    (setf (aref (moon-velocity tmp) 1) (vy moon))
+    (setf (aref (moon-velocity tmp) 2) (vz moon))
+    tmp))
+    	     
+
 ;; can we copy structure ??
 (defun test2 ()
   (let* ((moons (list (make-moon :name 'a :position #(4 1 1) :velocity #(0 0 0))
@@ -190,4 +204,32 @@
     (run-for moons2 100)
     moons))
 
+(defun test3 ()
+  (let* ((moons (example))
+	 (original (mapcar #'copy-moon moons))
+	 (count 0)
+	 (keep-going t))
+    (loop while keep-going do
+      (one-step moons)
+      (incf count)
+      (when (equalp moons original)
+	(format t "repeat at index ~a~%" count)
+	(setq keep-going nil)))))
+
+(defun test4 ()
+  (let* ((moons (example2))
+	 (original (mapcar #'copy-moon moons))
+	 (count 0)
+	 (keep-going t))
+    (loop while keep-going do
+      (one-step moons)
+      (incf count)
+      (when (zerop (mod count (expt 10 6)))
+	(format t "progress ~a~%" count))
+      (when (equalp moons original)
+	(format t "repeat at index ~a~%" count)
+	(setq keep-going nil)))))
+
+      
+  
 
