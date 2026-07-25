@@ -3,7 +3,7 @@
 #include <string.h>
 #include <inttypes.h>
 // types 
-static int64_t count = 0LL ;
+static int64_t count = 0LL ; 
 static int64_t px1 = 0LL ;
 static int64_t py1 = 0LL ;
 static int64_t pz1 = 0LL ;
@@ -114,9 +114,10 @@ int main(){
     py4 = py4 + vy4;
     pz4 = pz4 + vz4;
     count++; // steps we have computed 
-    if (count % 10000000 == 0) { 
-      printf("explored %" PRId64 "\n",count);
-    }
+    /* if (count % 10000000 == 0) {  
+       printf("explored %" PRId64 "\n",count); 
+     }
+    */
     if (px1 != 4LL) { continue; }
     if (py1 != 1LL) { continue; }
     if (pz1 != 1LL) { continue; }
@@ -136,3 +137,17 @@ int main(){
   printf("met itself %" PRId64 "\n ", count);
   return 0;
 }
+
+
+/*
+
+explored 69850000000
+explored 69750000000  C-c C-c
+
+real	30m48.782s
+user	30m48.626s
+sys	0m0.013s
+
+in excess of half an hour ?
+
+ */
